@@ -1,0 +1,270 @@
+use context starter2024
+import image as I
+
+import reactors as R
+
+# creating datatype position to store positions
+data Posn:
+  | posn(x, y)
+end
+
+data World:
+  | world(fp :: Posn, dp :: Posn, bg1 :: Posn, bg2 :: Posn, chp :: Posn, cap :: Posn) 
+    # fp = fairy position 
+    # dp = demon position
+    # bg1 = topmost bg position
+    # bg2 = mid bg position
+    # chp = chocolate position
+    # cap = capsicum position
+    
+end
+
+# loading fairy image
+fairy-og = I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1Jn_bbejd0nR5GxK9iqsVnb7LCWLt2sdg")
+
+# initialized the image for the object
+demon-og = I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=187QwZ6pc2Z3RIpOBs85xzNyA-wezeyR_")
+
+# scaled versions of fairy and demon
+fairy = scale-xy(1, 1, fairy-og)
+demon = scale-xy((1 / 2 ), (1 / 2), demon-og)
+
+# loading chocolate and capsicum
+
+chocolate-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1y_q1Ost6PZnUzZDF_JwhWUgH9PE9AR1P")
+
+capsicum-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1eUuG-7JJTjya9wWzXXHvIpne28RVqdgg")
+
+chocolate = scale-xy((1 / 3), (1 / 3), chocolate-og)
+capsicum = scale-xy((1 / 3), (1 / 3), capsicum-og)
+
+
+WIDTH = 1200
+HEIGHT = 700
+
+demon-loc = posn(random(WIDTH), random(HEIGHT)) # FIGURE OUT HOW TO UPDATE THE BOUNDS SO IT DOESNT SPAWN ON TOP THE PLAYER
+
+
+# creating a background
+
+scene-1-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1PngseIvIk3qRzwItNeaY2uz8vUNR2RMQ")
+
+scene-2-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1KUWHPvcD3aaTMYYbyS6Ql1zqsiyqRp3y")
+
+scene-3-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1esA_1wKWI2YHHZgVnwZqsR8G-PzK4jb3")
+
+scene-4-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1RnMmu1xvUVs1k_DFERNKpx0frdpcDYDn")
+
+scene-5-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1cnLpN443W9_AA5aScWMeDrtffM1D_qhV")
+
+scene-6-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1Bu8066LOk75IbslBhk_XRKCai6zx0UmW")
+
+scene-7-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=1nhFYToq6bVYLZZl6WmuF99xAexJLpXbv")
+
+scene-8-og = 
+  I.image-url("https://code.pyret.org/shared-image-contents?sharedImageId=12FDj93sv2c-gLENySSWlyZ5GgjZGb17Z")
+
+
+
+  
+#scene-1 = scale-xy(5, 5, scene-1-og) # noisy # not usable
+scene-2 = scale-xy(4, 4, scene-2-og) # clear and cute
+scene-3 = scale-xy(3, 3, scene-3-og) # clear and cute
+scene-4 = scale-xy(2, 2, scene-4-og) # clear and cute
+#scene-5 = scale-xy()
+#scene-6 = scale-xy()
+#scene-7 = scale-xy(5, 5, scene-7-og) # noisy # not usable
+#scene-8 = scale-xy(1, 1, scene-8-og) # has watermarks but is clear # not using this one
+
+# place fairy by x-coordinates
+#fun place-fairy-x(w, scene-place):
+#  I.place-image(fairy, w, 50, scene-place)
+#end
+
+# initializin value of x coordinate
+fairy-x-move = 10
+
+fun move-fairy-x-on-tick(w):
+  w + fairy-x-move
+end
+
+# ensures fairy doesn't eternally go into right screen
+fun move-fairy-wrapping-x-on-tick(x):
+  num-modulo(num-ceiling(move-fairy-x-on-tick(x)), 1200)
+end
+
+fairy-y-move = 3
+
+fun move-fairy-y-on-tick(y):
+  y + fairy-y-move
+end
+
+
+demon-x-move = 15
+
+# demon movements
+
+fun move-demon-x-on-tick(w):
+  w + demon-x-move
+end
+
+# ensures fairy doesn't eternally go into right screen
+fun move-demon-wrapping-x-on-tick(x):
+  num-modulo(move-demon-x-on-tick(x), 1000)
+end
+
+demon-y-move = 8
+
+fun move-demon-y-on-tick(y):
+  y + demon-y-move
+end
+
+fun move-demon-wrapping-y-on-tick(y):
+  num-modulo(move-demon-y-on-tick(y), 800)
+end
+
+collision-threshold = 100
+  
+
+fun are-overlapping(w):
+  distance(w.fp, w.dp)
+    < collision-threshold
+end
+
+fun distance(p1, p2):
+  fun square1(n): n * n end
+  num-sqrt(square1(p1.x - p2.x) + square1(p1.y - p2.y))
+end
+
+fun move-fairy-and-demon-xy-on-tick(w :: World):
+  world(
+    posn(
+      if distance(w.fp, w.chp) < collision-threshold:  #responsible for speed buffing and debuffing
+        move-fairy-wrapping-x-on-tick(w.fp.x * 1.5) 
+      else if distance(w.fp, w.cap) < collision-threshold:  
+        move-fairy-wrapping-x-on-tick(w.fp.x * 0.5) 
+      else: 
+        move-fairy-wrapping-x-on-tick(w.fp.x) 
+      end,
+      move-fairy-y-on-tick(w.fp.y)),
+    posn(
+      move-demon-wrapping-x-on-tick(w.dp.x),
+      move-demon-wrapping-y-on-tick(w.dp.y)),
+    posn(
+      8 + w.bg1.x, # causes background to move
+      w.bg1.y),
+    posn(
+      1 + w.bg2.x, # causes background to move
+      w.bg2.y),
+    posn(
+      w.chp.x,
+      w.chp.y),
+    posn(
+      w.cap.x,
+      w.cap.y))
+end
+
+
+fun place-fairy-and-demon-xy(w):
+  I.place-image(
+    fairy,
+    w.fp.x,
+    w.fp.y,
+    I.place-image(
+      demon,
+      w.dp.x, 
+      w.dp.y,
+      I.place-image(
+        chocolate,
+        w.chp.x, 
+        w.chp.y,
+        I.place-image(
+          capsicum,
+          w.cap.x, 
+          w.cap.y,
+          I.place-image(
+            scene-2, # moving background
+            w.bg1.x, 
+            w.bg1.y,
+          I.place-image(
+              scene-3, # moving background
+              w.bg2.x, 
+              w.bg2.y,
+              scene-4 # static background
+              )
+            )
+          )
+        )
+      )
+    )
+end
+
+initial-pos = world(posn(0, 0), posn(random(1000), random(1000)), posn(500, 300), posn(500, 300), posn(random(WIDTH ), random(HEIGHT)), posn(random(WIDTH ), random(HEIGHT)))
+
+key-distance = 10
+
+fun alter-fairy-on-key(w, key):
+  ask:
+    | key == "up"   then: world(
+        posn(w.fp.x, w.fp.y - key-distance),
+        posn(w.dp.x, w.dp.y),
+        posn(w.bg1.x, w.bg1.y),
+        posn(w.bg2.x, w.bg2.y),
+        posn(w.chp.x, w.chp.y),
+        posn(w.cap.x, w.cap.y))
+    | key == "down" then: 
+      world(
+        posn(w.fp.x, w.fp.y + key-distance),
+        posn(w.dp.x, w.dp.y),
+        posn(w.bg1.x, w.bg1.y),
+        posn(w.bg2.x, w.bg2.y),
+        posn(w.chp.x, w.chp.y),
+        posn(w.cap.x, w.cap.y))
+    | key == "left"   then: 
+      world(
+        posn(w.fp.x - key-distance, w.fp.y),  
+        posn(w.dp.x, w.dp.y),
+        posn(w.bg1.x, w.bg1.y),
+        posn(w.bg2.x, w.bg2.y),
+        posn(w.chp.x, w.chp.y),
+        posn(w.cap.x, w.cap.y))
+    | key == "right"   then: 
+      world(
+        posn(w.fp.x + key-distance, w.fp.y), 
+        posn(w.dp.x, w.dp.y),
+        posn(w.bg1.x, w.bg1.y),
+        posn(w.bg2.x, w.bg2.y),
+        posn(w.chp.x, w.chp.y),
+        posn(w.cap.x, w.cap.y))
+    | otherwise: w
+  end
+end
+
+fun is-grounded(w):
+  w.fp.y >= (HEIGHT)
+end
+
+
+fun game-ends(w :: World):
+  is-grounded(w) or are-overlapping(w) # the overlapping is brekaing the program
+end
+
+anim = reactor:
+  title: "(Safe???) Passage",
+  init: initial-pos,
+  on-tick: move-fairy-and-demon-xy-on-tick, # see if you can't add bg to this to change it on tick
+  on-key: alter-fairy-on-key,
+  to-draw: place-fairy-and-demon-xy,
+  stop-when: game-ends
+end
+
+R.interact(anim)
